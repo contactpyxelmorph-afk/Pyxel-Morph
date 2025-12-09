@@ -108,6 +108,33 @@ def verify_paypal_webhook(request_data, headers):
         return False
 
 
+# Inside app.py, below the other helper functions:
+
+@app.route('/get_status', methods=['GET'])
+def get_user_status():
+    """
+    Handles the GET request from the desktop application to check a user's current tier.
+    URL example: /get_status?user=test_user1
+    """
+    # 1. Get the username from the query parameters
+    username = request.args.get('user')
+
+    if not username:
+        return jsonify({"error": "Username parameter missing"}), 400
+
+    # 2. Look up the user's status in the database (users.json)
+    users = load_users()
+
+    for user in users:
+        if user["username"] == username:
+            # 3. Return the current tier status
+            return jsonify({"type": user["type"]}), 200
+
+    # User not found
+    return jsonify({"error": "User not found"}), 404
+
+
+# ... (rest of your app.py code, including the /paypal/webhook route)
 # --- 4. THE WEBHOOK ROUTE ---
 
 @app.route('/paypal/webhook', methods=['POST'])
