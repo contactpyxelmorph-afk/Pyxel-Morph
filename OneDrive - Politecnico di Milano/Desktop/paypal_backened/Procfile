@@ -1,1 +1,1 @@
-web: gunicorn paypal_backened.app:app
+web: gunicorn app:app
