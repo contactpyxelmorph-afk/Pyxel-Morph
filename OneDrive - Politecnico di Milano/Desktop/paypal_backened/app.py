@@ -1,213 +1,181 @@
 from flask import Flask, request, jsonify
 import json
 import os
-import requests  # Needed for verification and API calls
-from functools import wraps
-import base64  # Needed for basic authentication
+import requests
+from dotenv import load_dotenv
+import base64
 
-# --- 1. CONFIGURATION (MUST BE REPLACED WITH YOUR REAL CREDENTIALS) ---
+# ------------------------------
+# ENVIRONMENT CONFIG
+# ------------------------------
 
-# Get these from your PayPal Developer Dashboard -> My Apps & Credentials (LIVE tab)
-PAYPAL_CLIENT_ID = "Abs7Q7urHJ7gQfoFDm_5YbVW7euPKdSonNgoT4UFm3PKcagSkllBiM4biPuRwVCI6AJVwtJNXq_iK4Il"
-PAYPAL_SECRET = "EL4aPOtVBGnt1C-DC29PCL4CN9eTGJaInbBGEf2wXke1Bwfmw8hL3Td4VmYkc78wDfzwoHYbezEsBAFk"
+load_dotenv()
+PLAN_IDS = {
+    "pro": "P-5MS58158LM8045458NE4IBOI",
+    "diamond": "P-06A12557DS926960YNE4IBOY"
+}
 
-# Get this from your PayPal Developer Dashboard -> Webhooks settings for this app.
-WEBHOOK_ID = "24V91875PX6721936"
+PAYPAL_CLIENT_ID = os.environ.get("PAYPAL_CLIENT_ID")
+PAYPAL_SECRET = os.environ.get("PAYPAL_SECRET")
 
-# Base URL for PayPal API environment
-PAYPAL_API_BASE = "https://api-m.paypal.com"  # Live/Production environment
+# Use PayPal SANDBOX for testing
+PAYPAL_API_BASE = "https://api-m.sandbox.paypal.com"
 
-# --- 2. SETUP ---
+WEBHOOK_ID = os.environ.get("PAYPAL_WEBHOOK_ID")
 
 app = Flask(__name__)
 
-
-# --- Helper Functions ---
+# ------------------------------
+# USER STORAGE (JSON FILE)
+# ------------------------------
 
 def load_users():
-    """Loads user data from the local JSON file."""
-    # NOTE: Heroku's filesystem is ephemeral. This works for simple demos but
-    # a proper database (like Heroku Postgres) is required for real production data.
     if os.path.exists("users.json"):
         with open("users.json", "r") as f:
             return json.load(f)
     return []
 
-
 def save_users(users):
-    """Saves user data back to the local JSON file."""
-    try:
-        with open("users.json", "w") as f:
-            json.dump(users, f, indent=4)
-    except Exception as e:
-        print(f"ERROR: Could not save users.json: {e}")
+    with open("users.json", "w") as f:
+        json.dump(users, f, indent=4)
 
+# ------------------------------
+# PAYPAL AUTH
+# ------------------------------
 
 def get_access_token():
-    """Obtains a PayPal OAuth2 Access Token for API verification."""
-    auth_header = base64.b64encode(f"{PAYPAL_CLIENT_ID}:{PAYPAL_SECRET}".encode()).decode()
+    auth = base64.b64encode(f"{PAYPAL_CLIENT_ID}:{PAYPAL_SECRET}".encode()).decode()
+
     headers = {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Authorization": f"Basic {auth_header}"
+        "Authorization": f"Basic {auth}",
+        "Content-Type": "application/x-www-form-urlencoded"
     }
     data = "grant_type=client_credentials"
 
-    try:
-        response = requests.post(f"{PAYPAL_API_BASE}/v1/oauth2/token", headers=headers, data=data)
-        response.raise_for_status()
-        return response.json().get('access_token')
-    except requests.exceptions.RequestException as e:
-        print(f"Error obtaining PayPal access token: {e}")
-        return None
+    r = requests.post(f"{PAYPAL_API_BASE}/v1/oauth2/token", headers=headers, data=data)
+    r.raise_for_status()
+    return r.json()["access_token"]
 
+# ------------------------------
+# CREATE SUBSCRIPTION
+# ------------------------------
 
-# --- 3. THE CORE VERIFICATION LOGIC ---
+@app.route("/create_subscription", methods=["POST"])
+def create_subscription():
+    data = request.json
+    username = data.get("username")
+    tier = data.get("tier")
 
-def verify_paypal_webhook(request_data, headers):
-    """
-    Sends the received webhook payload back to PayPal for verification.
-    Returns True if verification status is 'SUCCESS', False otherwise.
-    """
+    if not username or not tier:
+        return jsonify({"error": "Missing username or tier"}), 400
+
+    if tier not in PLAN_IDS:
+        return jsonify({"error": "Invalid tier"}), 400
+
+    plan_id = PLAN_IDS[tier]
+
     access_token = get_access_token()
-    if not access_token:
-        print("Verification Failed: Could not get PayPal access token.")
-        return False
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
 
-    verification_url = f"{PAYPAL_API_BASE}/v1/notifications/verify-webhook"
-
-    # PayPal requires specific headers to be passed back for verification
-    try:
-        verification_payload = {
-            "auth_algo": headers.get('PAYPAL-AUTH-ALGO'),
-            "cert_url": headers.get('PAYPAL-CERT-URL'),
-            "transmission_id": headers.get('PAYPAL-TRANSMISSION-ID'),
-            "transmission_sig": headers.get('PAYPAL-TRANSMISSION-SIG'),
-            "transmission_time": headers.get('PAYPAL-TRANSMISSION-TIME'),
-            "webhook_id": WEBHOOK_ID,
-            "webhook_event": request_data  # The raw event payload
+    body = {
+        "plan_id": plan_id,
+        "custom_id": username,
+        "application_context": {
+            "brand_name": "Pyxel Morph",
+            "locale": "en-US",
+            "user_action": "SUBSCRIBE_NOW",
+            "return_url": f"https://pyxel-morph-listener-cf123.herokuapp.com/paypal/success?user={username}",
+            "cancel_url": f"https://pyxel-morph-listener-cf123.herokuapp.com/paypal/cancel"
         }
+    }
 
-        response = requests.post(
-            verification_url,
-            headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
-            json=verification_payload
-        )
-        response.raise_for_status()
+    r = requests.post(
+        f"{PAYPAL_API_BASE}/v1/billing/subscriptions",
+        headers=headers,
+        json=body
+    )
+    r.raise_for_status()
+    subscription = r.json()
 
-        verification_status = response.json().get('verification_status')
+    # Extract approval URL
+    approval_url = next((link["href"] for link in subscription.get("links", []) if link["rel"] == "approve"), None)
+    if not approval_url:
+        return jsonify({"error": "No approval URL returned"}), 500
 
-        if verification_status == "SUCCESS":
-            print("--- Webhook Verification SUCCESSFUL ---")
-            return True
-        else:
-            print(f"--- Webhook Verification FAILED: Status {verification_status} ---")
-            return False
+    return jsonify({"approval_url": approval_url})
 
-    except requests.exceptions.RequestException as e:
-        print(f"Error during PayPal verification API call: {e}")
-        return False
+# ------------------------------
+# GET USER STATUS
+# ------------------------------
 
-
-# Inside app.py, below the other helper functions:
-
-@app.route('/get_status', methods=['GET'])
+@app.route("/get_status", methods=["GET"])
 def get_user_status():
-    """
-    Handles the GET request from the desktop application to check a user's current tier.
-    URL example: /get_status?user=test_user1
-    """
-    # 1. Get the username from the query parameters
-    username = request.args.get('user')
-
+    username = request.args.get("user")
     if not username:
-        return jsonify({"error": "Username parameter missing"}), 400
+        return jsonify({"error": "missing user"}), 400
 
-    # 2. Look up the user's status in the database (users.json)
     users = load_users()
+    for u in users:
+        if u["username"] == username:
+            return jsonify({"type": u["type"]})
 
-    for user in users:
-        if user["username"] == username:
-            # 3. Return the current tier status
-            return jsonify({"type": user["type"]}), 200
+    # Default tier if user not found
+    return jsonify({"type": "free"})
 
-    # User not found
-    return jsonify({"error": "User not found"}), 404
+# ------------------------------
+# WEBHOOK LISTENER
+# ------------------------------
 
+@app.route("/paypal/webhook", methods=["POST"])
+def paypal_webhook():
+    event = request.json
+    event_type = event.get("event_type")
+    resource = event.get("resource", {})
+    plan_id = resource.get("plan_id")
+    custom_id = resource.get("custom_id")
 
-# ... (rest of your app.py code, including the /paypal/webhook route)
-# --- 4. THE WEBHOOK ROUTE ---
+    print("Received event:", event_type, "for user:", custom_id)
 
-@app.route('/paypal/webhook', methods=['POST'])
-def paypal_webhook_listener():
-    # 1. Get raw JSON data for verification
-    request_data = request.get_json(silent=True)
+    if event_type in ["BILLING.SUBSCRIPTION.ACTIVATED", "PAYMENT.SALE.COMPLETED"]:
+        # Map plan_id to tier
+        new_tier = None
+        for tier, pid in PLAN_IDS.items():
+            if pid == plan_id:
+                new_tier = tier
+                break
 
-    if not request_data or not request.data:
-        return jsonify({"status": "error", "message": "Invalid or missing payload"}), 400
+        if not new_tier:
+            print("Unknown plan_id:", plan_id)
+            return jsonify({"status": "error", "message": "Unknown plan"}), 200
 
-    event_type = request_data.get('event_type')
-
-    # 2. PERFORM SECURITY CHECK
-    # IMPORTANT: You must send the raw request body to the verification function,
-    # but accessing it directly from Flask's request.get_data() can be tricky
-    # after request.get_json(). For simplicity, we pass the JSON object and assume
-    # the security check handles necessary serialization.
-
-    # In a real environment, you MUST use request.get_data() and pass the raw bytes
-    # for signature verification.
-
-    if not verify_paypal_webhook(request_data, request.headers):
-        # Always return 200 OK even if verification fails, but do not process the data.
-        return jsonify({"status": "security_fail", "message": "Webhook sender could not be verified."}), 200
-
-    # 3. PROCESS THE VERIFIED EVENT
-    print(f"--- Processing Verified Event: {event_type} ---")
-
-    # The payload structure is complex. We look for payment/subscription details.
-
-    # Check for successful payment or new subscription
-    if event_type in ["BILLING.SUBSCRIPTION.CREATED", "PAYMENT.SALE.COMPLETED"]:
-
-        # Extracting the User Identifier (must be included in your PayPal link 'custom' field)
-        # PayPal places custom data in different spots depending on the event type.
-        # This is the most common path for subscription custom data:
-        custom_data = request_data.get('resource', {}).get('custom_id', request_data.get('resource', {}).get('custom'))
-
-        if not custom_data:
-            print("WARNING: Custom User ID missing. Cannot upgrade.")
-            return jsonify({"status": "warning", "message": "No user ID found."}), 200
-
-        # *** YOUR UPGRADE LOGIC GOES HERE ***
-        target_username = custom_data  # Assuming the custom field is the username
-        new_tier = "pro"  # This should be determined by the product ID in the payload
-
+        # Update users.json
         users = load_users()
         found = False
-
-        for user in users:
-            if user["username"] == target_username:
-                user["type"] = new_tier
-                # Optionally save subscription ID and next billing date here
+        for u in users:
+            if u["username"] == custom_id:
+                u["type"] = new_tier
                 found = True
                 break
 
         if found:
             save_users(users)
-            print(f"SUCCESS: User {target_username} upgraded to {new_tier}. Database updated.")
-            return jsonify({"status": "SUCCESS", "message": "User tier updated."}), 200
+            print(f"User {custom_id} upgraded to {new_tier}")
+            return jsonify({"status": "success"}), 200
         else:
-            print(f"ERROR: User {target_username} not found in database.")
-            return jsonify({"status": "error", "message": "User not found for upgrade."}), 404
+            print(f"User {custom_id} not found in database")
+            return jsonify({"status": "error", "message": "User not found"}), 404
 
-    # Handle cancellations for Downgrade Logic (Phase 2)
     elif event_type == "BILLING.SUBSCRIPTION.CANCELLED":
-        print("INFO: Subscription cancelled. Downgrade logic would execute here.")
-        # Downgrade logic...
+        print(f"Subscription cancelled for {custom_id} — implement downgrade logic here.")
 
-    return jsonify({"status": "ok", "message": f"Event {event_type} received but not processed."}), 200
+    return jsonify({"status": "ok"}), 200
 
+# ------------------------------
+# RUN APP
+# ------------------------------
 
-# --- 5. SERVER STARTUP ---
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
