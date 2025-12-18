@@ -45,12 +45,12 @@ Pyxel Morph is a software tool for **graphic design in game development**. It co
 Input image → Green preview → Recolored output:
 
 ![Example1](img1.png)
-![Example2](example.png)
 
 ## 📬 Support
 
 For any questions or issues, contact us at:  
 **contact.pyxelmorph@gmail.com**
+
 
 
 
