@@ -14,7 +14,7 @@ Pyxel Morph is a software tool for **graphic design in game development**. It co
 
 ## 💎 Subscription Tiers
 
-| Tier     | Max Palettes | Max Input Colors | Can Use Complex Images | Price |
+| Tier     | Max Palettes | Max Input Colors | Can Use Complex Image Optimization | Price |
 |----------|--------------|-----------------|----------------------|-------|
 | Free     | 7            | 11              | ❌                    | Free  |
 | Pro      | 7            | 11              | ✅                   | €1.99/month |
@@ -51,6 +51,7 @@ Input image → Green preview → Recolored output:
 
 For any questions or issues, contact us at:  
 **contact.pyxelmorph@gmail.com**
+
 
 
 
