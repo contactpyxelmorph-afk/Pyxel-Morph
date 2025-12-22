@@ -61,6 +61,8 @@ For any questions or issues, contact us at:
 
 pricing information here is correct at all times; disregard inconsistencies between alterantive manual or read me files; cancel subscription button should be no longer functional, now that fixed prices come into effect
 
+ATTENTION ‼️: palette recycling is a bit inaccurate for images with big clashes of color and 8 palettes; issue will be fixed in the next within tuesday 23rd 
+
 
 
 
