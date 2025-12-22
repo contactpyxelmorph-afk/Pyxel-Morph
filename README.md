@@ -51,7 +51,7 @@ tile grid using 4 colors (1 palette):
 tile grid using 8 palettes:
 ![tile grid using 8 palettes](tile_grid.png)
 ![actual recolor](gb_ex.png)
-note: in scene 8 I pasted the palette colors on the color panel rather than the find-closest-hex panel, so colors are a bit mismatched
+note: in scene 8 I pasted the palette colors on the color panel rather than the find-closest-hex panel, so colors are a bit mismatched; took 25 minutes to color each image with tile_grid
 
 ## 📬 Support
 
@@ -60,6 +60,7 @@ For any questions or issues, contact us at:
 
 
 pricing information here is correct at all times; disregard inconsistencies between alterantive manual or read me files; cancel subscription button should be no longer functional, now that fixed prices come into effect
+
 
 
 
