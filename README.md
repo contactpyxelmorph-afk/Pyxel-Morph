@@ -53,7 +53,8 @@ For any questions or issues, contact us at:
 **contact.pyxelmorph@gmail.com**
 
 
-pricing information here is correct t all times; disregard inconsistencies between alterantive manual or read me files
+pricing information here is correct at all times; disregard inconsistencies between alterantive manual or read me files; cancel subscription button should be no longer functional, now that fixed prices come into effect
+
 
 
 
