@@ -17,8 +17,8 @@ Pyxel Morph is a software tool for **graphic design in game development through 
 | Tier     | Max Palettes | Max Input Colors | Can Use Complex Image Optimization | Price |
 |----------|--------------|-----------------|----------------------|-------|
 | Free     | 5            | 10              | ❌                    | Free  |
-| Pro      | 7            | 11              | ✅                   | €0.75/month |
-| Diamond  | Unlimited    | Unlimited       | ✅                   | €1.20/month |
+| Pro      | 7            | 11              | ✅                   | €7.50 for life |
+| Diamond  | Unlimited    | Unlimited       | ✅                   | €9.99 for life |
 
 > Note: Maximum 2 priority colors for all tiers. Only 8x8 tiles supported.
 
@@ -54,6 +54,7 @@ For any questions or issues, contact us at:
 
 
 pricing information here is correct t all times; disregard inconsistencies between alterantive manual or read me files
+
 
 
 
