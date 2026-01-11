@@ -1,5 +1,3 @@
-PLEASE WAIT BEFORE BUYING, a bug is being fixed
-
 # 🎨 Pyxel Morph
 
 Pyxel Morph is a software tool for **graphic design in game development through GB STUDIO**. It converts your input images into green-shaded previews, helping you quickly map colors into palettes for your game scenes, in addition to a MAPPING FILE and a PALETTE LIST that can be inserted directly into gbstudio. No more need to make a green shaded image from scratch: the app will do that for you.
@@ -62,6 +60,7 @@ For any questions or issues, contact us at:
 
 
 pricing information here is correct at all times; disregard inconsistencies between alterantive manual or read me files; cancel subscription button should be no longer functional, now that fixed prices come into effect
+
 
 
 
