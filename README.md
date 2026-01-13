@@ -46,6 +46,7 @@ Input image → Green preview → Recolored output:
 
 ![Example1](img1.png)
 ![Example2](exampl.png)
+![After last update](Screenshot%2026-01-13%143139.png)
 tile grid using 4 colors (1 palette):
 ![tile grid using 4 colors (1 palette)](tile_grid_0.png)
 tile grid using 8 palettes:
@@ -60,6 +61,7 @@ For any questions or issues, contact us at:
 
 
 pricing information here is correct at all times; disregard inconsistencies between alterantive manual or read me files; cancel subscription button should be no longer functional, now that fixed prices come into effect
+
 
 
 
