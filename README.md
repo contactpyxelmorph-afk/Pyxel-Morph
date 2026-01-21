@@ -1,4 +1,4 @@
-RECENT SHUTDOWN OF DATABASE DUE TO LOW VISIBILITY, AVOID PURCHASE UNTIL THE 27th; free version will continue working as before
+RECENT SHUTDOWN OF DATABASE DUE TO LOW VISIBILITY, AVOID PURCHASE UNTIL THE 27th of January; free version will continue working as before
 
 # 🎨 Pyxel Morph
 
@@ -105,6 +105,7 @@ For any questions or issues, contact us at:
 
 
 pricing information here is correct at all times; disregard inconsistencies between alterantive manual or read me files; cancel subscription button should be no longer functional, now that fixed prices come into effect
+
 
 
 
